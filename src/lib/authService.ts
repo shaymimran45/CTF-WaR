@@ -1,22 +1,29 @@
-﻿import { supabase } from './supabase';
+import { supabase } from './supabase';
 
 export class AuthService {
-    // Sign up - simplified, trigger will create user profile
+    // Sign up
     static async signUp(email: string, password: string, username: string) {
         try {
-            // Create auth user with username in metadata
+            // Create auth user
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email,
                 password,
-                options: {
-                    data: {
-                        username: username,
-                    },
-                },
             });
 
             if (authError) throw authError;
             if (!authData.user) throw new Error('User creation failed');
+
+            // Create user profile
+            const { error: profileError } = await supabase
+                .from('users')
+                .insert({
+                    id: authData.user.id,
+                    username,
+                    email,
+                    created_at: new Date().toISOString(),
+                });
+
+            if (profileError) throw profileError;
 
             return { success: true, user: authData.user };
         } catch (error: any) {
